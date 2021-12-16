@@ -57,8 +57,13 @@ public class panel extends AppCompatActivity {
 
     String session_id,private_key,public_key,user_id;
     String peer_pubkey;
+	
+	String email;
 
     String option,responded_status;
+	String request_id;
+	
+	Intent i;
 
 
     public panel() throws NoSuchAlgorithmException, NoSuchPaddingException {
@@ -119,6 +124,7 @@ public class panel extends AppCompatActivity {
             session_id = extras.getString("session_id");
             public_key = extras.getString("public_key");
             private_key = extras.getString("private_key");
+			email = extras.getString("email");
         }
 
 
@@ -132,21 +138,11 @@ public class panel extends AppCompatActivity {
             public void onClick(View view){
                 option = "req";
                 responded_status = "binding";
-                String request_id = String.format("%04d", rand.nextInt(10000));
+                request_id = String.format("%04d", rand.nextInt(10000));
 //                String email2 = "temp@temp.com";
-                ChatManagement(request_id,option,user_id,data.getText().toString(),responded_status,null);
-
-            }
-        });
-
-        accept.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                option = "res";
-                responded_status = "accept";
-
-
-                keygen.init(256);
+                ChatManagement(request_id,option,user_id,email,responded_status,null);
+				
+				keygen.init(256);
                 SecretKey GenKey = keygen.generateKey();
                 String key = GenKey.getEncoded().toString();
 
@@ -180,17 +176,39 @@ public class panel extends AppCompatActivity {
                 }
 
 
-
-
                 String dd = Base64.encodeToString(cipherdata,Base64.DEFAULT);
+				
+				ShareKey(request_id,dd);
+                Toast.makeText(panel.this,""+dd,Toast.LENGTH_SHORT).show();
+				
+				i = new Intent(getApplicationContext(),keyExchange.class);
+				i.putExtra("secret_key",dd);
+				i.putExtra("private_key",privateKey);
+				i.putExtra("email",email);
+				startActivity(i);
+				
+				
+				
+				
+				
+
+            }
+        });
+
+        accept.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                option = "res";
+                responded_status = "accept";
+
 
 //                Toast.makeText(panel.this,""+dd,Toast.LENGTH_SHORT).show();
-
-
-                String chatting_id = String.format("%04d", rand.nextInt(10000));
-                ChatManagement(data.getText().toString(),option,"","",responded_status,chatting_id);
-                ShareKey(chatting_id,dd);
-                Toast.makeText(panel.this,""+dd,Toast.LENGTH_SHORT).show();
+                ChatManagement(data.getText().toString(),option,"","",responded_status,null);
+				AskSecKey(data.getText().toString());
+				
+				
+				
+				
 
             }
         });
@@ -223,6 +241,24 @@ public class panel extends AppCompatActivity {
                     @Override
                     public void accept(String s) throws Exception {
                         Toast.makeText(panel.this, "" + s, Toast.LENGTH_SHORT).show();
+                    }
+                }));
+    }
+	
+	private void AskSecKey(String chatting_id) {
+        compositeDisposable.add(myAPI.AskSecKey(chatting_id)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Consumer<String>() {
+                    @Override
+                    public void accept(String s) throws Exception {
+                        Toast.makeText(panel.this, "" + s, Toast.LENGTH_SHORT).show();
+						i = new Intent(getApplicationContext(),keyExchange.class);
+						i.putExtra("secret_key",s);
+						i.putExtra("privateKey",privateKey);
+						i.putExtra("email",email);
+						startActivity(i);
+						
                     }
                 }));
     }

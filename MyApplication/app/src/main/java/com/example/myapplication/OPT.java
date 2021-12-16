@@ -44,7 +44,7 @@ public class OPT extends AppCompatActivity {
     MaterialButton submit;
     TextView otp;
 
-    String value;
+    String value,email;
     Intent i;
 
     public OPT() throws NoSuchProviderException, NoSuchAlgorithmException {
@@ -68,6 +68,8 @@ public class OPT extends AppCompatActivity {
         Bundle extras = getIntent().getExtras();
         if (extras != null) {
              value = extras.getString("session_id");
+			 email = example.getString("email");
+			 
         }
 
 
@@ -123,6 +125,7 @@ public class OPT extends AppCompatActivity {
                             i.putExtra("session_id",session_id);
                             i.putExtra("public_key",publicKey);
                             i.putExtra("private_key",privateKey);
+							i.putExtra("email",email);
                             startActivity(i);
                         }
                         else

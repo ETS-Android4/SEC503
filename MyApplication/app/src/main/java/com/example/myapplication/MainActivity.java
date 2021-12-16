@@ -101,6 +101,7 @@ public class MainActivity extends AppCompatActivity {
                                 else
                                 {
                                     Intent i = new Intent(getApplicationContext(),OPT.class);
+									i.putExtra("email",email);
                                     i.putExtra("session_id",s);
                                     startActivity(i);
                                 }
