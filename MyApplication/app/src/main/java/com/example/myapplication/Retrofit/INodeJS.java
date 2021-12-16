@@ -23,6 +23,33 @@ public interface INodeJS {
     Observable<String> otpuser(@Field("otp") String otp,
                                @Field("session_id") String session_id);
 
+    @POST("KeyManagemnt")
+    @FormUrlEncoded
+    Observable<String> KeyManagemnt(@Field("option") String option,
+                                    @Field("Pubkey") String Pubkey,
+                                    @Field("session_id") String session_id,
+                                    @Field("peer_id") String peer_id);
+
+
+    @POST("ChattManagement")
+    @FormUrlEncoded
+    Observable<String> ChatManagemnt(@Field("option") String option,
+                                     @Field("request_id") String request_id,
+                                     @Field("requester_id") String requester_id,
+                                     @Field("email") String email,
+                                     @Field("responded_status") String responded_status,
+                                     @Field("chatting_id")  String chatting_id);
+    @POST("/ShareKey/")
+    @FormUrlEncoded
+    Observable<String> ShareKey(@Field("chatting_id") String chatting_id,
+                                @Field("encrypted_key") String encrypted_key);
+
+
+//    var option = post_data.option;
+//    var Pubkey = post_data.Pubkey;
+//    var session_id = post_data.session_id;
+//    var peer_id = post_data.peer_id;
+
 
 
 }

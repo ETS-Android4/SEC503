@@ -204,24 +204,49 @@ app.post('/logout/',(req,res,next)=>{
 })
 
 
+app.post('/ShareKey/',(req,res,next)=>{
+    var post_data = req.body;
+
+    var encrypted_key = post_data.encrypted_key.replace(/['"]+/g, '')
+    console.log(encrypted_key);
+    var chatting_id = post_data.chatting_id
+    console.log(chatting_id);
+
+
+
+    con.query("INSERT INTO Project.KeyExchange (chatting_id, secret_key) VALUES(?, ?);", [chatting_id,encrypted_key],function(err,result,fields){
+        con.on('error',function(err){
+            console.log('[MySQL ERROR]',err);
+        });
+        res.json("secret ket has been sent");
+    })
+
+
+
+});
 
 app.post('/KeyManagemnt/',(req,res,next)=>{
     var post_data = req.body;
 
-    var option = post_data.option;
-    var Pubkey = post_data.Pubkey;
-    var session_id = post_data.session_id;
+    var option_b = post_data.option;
+    var option = option_b.replace(/['"]+/g, '');
+    console.log(option);
+    var Pubkey_b = post_data.Pubkey;
+    var Pubkey = Pubkey_b.replace(/['"]+/g, '');
+    console.log(Pubkey);
+    var session_id_b = post_data.session_id;
+    var session_id = session_id_b.replace(/['"]+/g, '');
     var peer_id = post_data.peer_id;
 
 
     if(option == 'push'){
-        con.query("SELECT * FROM Project.authenticated_users where session_id=?;", [session_id],function(err,result,fields){
+        con.query("SELECT * FROM Project.authenticated_users where id=?;", [session_id],function(err,result,fields){
             con.on('error',function(err){
                 console.log('[MySQL ERROR]',err);
             });
 
             if(result && result.length){
-                con.query("INSERT INTO Project.Keys_Managements (id, session_id, Public_key) VALUES(?, ?, ?);", [result[0].id,session_id,Pubkey],function(err,result,fields){
+                con.query("INSERT INTO Project.Keys_Managements (id, session_id, Public_key) VALUES(?, ?, ?);", [result[0].id,result[0].session_id,Pubkey],function(err,result,fields){
                     con.on('error',function(err){
                         console.log('[MySQL ERROR]',err);
                     });
@@ -241,11 +266,13 @@ app.post('/KeyManagemnt/',(req,res,next)=>{
                 console.log('[MySQL ERROR]',err);
             });
             console.log(result[0].Pubkey)
-            res.json(JSON.stringify(result[0].Public_key))
+            res.json(result[0].Public_key)
             // res.json("public key is uploaded !!")
         })
     }
 })
+
+
 app.post('/otp/',(req,res,next)=>{
     var post_data = req.body;
     var otp = post_data.otp;
@@ -274,11 +301,14 @@ app.post('/otp/',(req,res,next)=>{
                     });
                 
                 });
-                res.json("Login Successfully!!");
+                res.json(result[0].id);
 
 
 
             }
+        }else{
+            res.json("Failed");
+
         }
         
     })
@@ -286,8 +316,67 @@ app.post('/otp/',(req,res,next)=>{
      
 })
 
+
+/// Chatt Managment Module
+
+app.post('/ChattManagement/',(req,res,next)=>{
+
+    var post_data = req.body;
+
+    //request_id
+    var request_id = post_data.request_id;
+    console.log(request_id);
+    //requester_id
+    var requester_session_id = post_data.requester_id
+    console.log(requester_session_id);
+    //requester_message
+    var email = post_data.email;
+    console.log(email);
+    //encrypted_key
+    var chatting_id = post_data.chatting_id;
+    //responded_status
+    var responded_status = post_data.responded_status;
+    console.log(responded_status);
+    //option
+    var option = post_data.option;
+    console.log(option);
+
+    if(option == 'req'){
+
+        con.query("INSERT INTO Project.ChatRequest (requester_id, rquested_email, status, chatting_id, request_id) VALUES(?, ?, ?, NULL, ?);", [requester_session_id,email,responded_status,request_id],function(err,result,fields){
+            con.on('error',function(err){
+                console.log('[MySQL ERROR]',err);
+            });
+            res.json("request has been sent")
+        })
+
+    }
+    if (option == 'chk_res'){
+        con.query("SELECT requester_id,request_id, status FROM Project.ChatRequest WHERE rquested_email=? AND status=?",[email,responded_status],function(err,result,fields){
+            if(result && result.length){
+                res.json(result);
+            }
+            else{
+                res.json("no requests");
+            }
+        } )
+    }
+
+    if(option == 'res'){
+        con.query('UPDATE Project.ChatRequest SET status=?, chatting_id=? WHERE request_id=?',[responded_status,chatting_id,request_id],function(err,result,fields){
+            con.on('error',function(err){
+                console.log('[MySQL ERROR]',err);
+            });
+        });
+    }
+    
+
+    
+
+})
 // Start Server
 
+app.setMaxListeners(0);
 
 app.listen(3000,()=>{
     console.log('NodeJs Server is running on port 3000')
