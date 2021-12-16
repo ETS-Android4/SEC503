@@ -225,6 +225,19 @@ app.post('/ShareKey/',(req,res,next)=>{
 
 });
 
+app.post('/AskSecretKey/',(req,res,next)=>{
+	var post_data = req.body;
+	
+	var request_id = post_data.request_id;
+	
+	con.query("SELECT secret_key FROM Project.KeyExchange WHERE chatting_id=?",[request_id],function(err,result,fields){
+		console.log('[MySQL ERROR]',err);
+	});
+	res.json(result[0]);
+});
+
+
+
 app.post('/KeyManagemnt/',(req,res,next)=>{
     var post_data = req.body;
 
@@ -362,13 +375,13 @@ app.post('/ChattManagement/',(req,res,next)=>{
         } )
     }
 
-    if(option == 'res'){
+/*     if(option == 'res'){
         con.query('UPDATE Project.ChatRequest SET status=?, chatting_id=? WHERE request_id=?',[responded_status,chatting_id,request_id],function(err,result,fields){
             con.on('error',function(err){
                 console.log('[MySQL ERROR]',err);
             });
         });
-    }
+    } */
     
 
     
