@@ -4,6 +4,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.TestLooperManager;
+import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -81,8 +82,9 @@ public class MainActivity extends AppCompatActivity {
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Consumer<String>() {
                     @Override
-                    public void accept(String s) throws Exception {
-                        Toast.makeText(MainActivity.this,"subbbed"+s,Toast.LENGTH_SHORT).show();
+                    public void accept(String s) {
+                        Log.i("Test",s);
+                        Toast.makeText(MainActivity.this,""+s,Toast.LENGTH_SHORT).show();
                     }
                 })
         );

@@ -14,8 +14,14 @@
         android:theme="@style/Theme.MyApplication"
         android:usesCleartextTraffic="true">
         <activity
-            android:name=".keyExchange"
+            android:name=".MessageAdapter"
             android:exported="false" />
+        <activity
+            android:name=".ChatActivity"
+            android:exported="false" />
+        <activity
+            android:name=".keyExchange"
+            android:exported="true" />
         <activity
             android:name=".panel"
             android:exported="true" />

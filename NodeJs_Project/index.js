@@ -83,15 +83,6 @@ function checkHashPassword(password,salt){
     return pwdh;
 }
 
-// Testing 
-
-// app.get('/', (req,res,next)=>{
-//     console.log('Password: 12345');
-//     var result = SaltHashPassword('12345');
-//     console.log('Encrypted: '+ result.passwordHash);
-// })
-
-// User Registeration
 
 app.post('/register/',(req,res,next)=>{
     var post_data = req.body;
@@ -203,89 +194,6 @@ app.post('/logout/',(req,res,next)=>{
 
 })
 
-
-app.post('/ShareKey/',(req,res,next)=>{
-    var post_data = req.body;
-
-    var encrypted_key = post_data.encrypted_key.replace(/['"]+/g, '')
-    console.log(encrypted_key);
-    var chatting_id = post_data.chatting_id
-    console.log(chatting_id);
-
-
-
-    con.query("INSERT INTO Project.KeyExchange (chatting_id, secret_key) VALUES(?, ?);", [chatting_id,encrypted_key],function(err,result,fields){
-        con.on('error',function(err){
-            console.log('[MySQL ERROR]',err);
-        });
-        res.json("secret ket has been sent");
-    })
-
-
-
-});
-
-app.post('/AskSecretKey/',(req,res,next)=>{
-	var post_data = req.body;
-	
-	var request_id = post_data.request_id;
-	
-	con.query("SELECT secret_key FROM Project.KeyExchange WHERE chatting_id=?",[request_id],function(err,result,fields){
-		console.log('[MySQL ERROR]',err);
-	});
-	res.json(result[0]);
-});
-
-
-
-app.post('/KeyManagemnt/',(req,res,next)=>{
-    var post_data = req.body;
-
-    var option_b = post_data.option;
-    var option = option_b.replace(/['"]+/g, '');
-    console.log(option);
-    var Pubkey_b = post_data.Pubkey;
-    var Pubkey = Pubkey_b.replace(/['"]+/g, '');
-    console.log(Pubkey);
-    var session_id_b = post_data.session_id;
-    var session_id = session_id_b.replace(/['"]+/g, '');
-    var peer_id = post_data.peer_id;
-
-
-    if(option == 'push'){
-        con.query("SELECT * FROM Project.authenticated_users where id=?;", [session_id],function(err,result,fields){
-            con.on('error',function(err){
-                console.log('[MySQL ERROR]',err);
-            });
-
-            if(result && result.length){
-                con.query("INSERT INTO Project.Keys_Managements (id, session_id, Public_key) VALUES(?, ?, ?);", [result[0].id,result[0].session_id,Pubkey],function(err,result,fields){
-                    con.on('error',function(err){
-                        console.log('[MySQL ERROR]',err);
-                    });
-                    
-                })
-            
-            }
-            res.json("public key is uploaded !!")
-        })
-    }
-
-
-    if(option == 'ask'){
-        console.log(peer_id);
-        con.query("SELECT * FROM Project.Keys_Managements where id=?;", [peer_id],function(err,result,fields){
-            con.on('error',function(err){
-                console.log('[MySQL ERROR]',err);
-            });
-            console.log(result[0].Pubkey)
-            res.json(result[0].Public_key)
-            // res.json("public key is uploaded !!")
-        })
-    }
-})
-
-
 app.post('/otp/',(req,res,next)=>{
     var post_data = req.body;
     var otp = post_data.otp;
@@ -330,7 +238,94 @@ app.post('/otp/',(req,res,next)=>{
 })
 
 
-/// Chatt Managment Module
+// Key Management
+
+app.post('/KeyManagemnt/',(req,res,next)=>{
+    var post_data = req.body;
+
+    var option = post_data.option;
+    // var option = option_b.replace(/['"]+/g, '');
+    console.log(option);
+    var Pubkey = post_data.Pubkey;
+    // var Pubkey = Pubkey_b.replace(/['"]+/g, '');
+    console.log(Pubkey);
+    var session_id_b = post_data.session_id;
+    var session_id = session_id_b.replace(/['"]+/g, '');
+    var peer_id = post_data.peer_id;
+
+
+    if(option == 'push'){
+        con.query("SELECT * FROM Project.authenticated_users where session_id=?;", [session_id],function(err,result,fields){
+            con.on('error',function(err){
+                console.log('[MySQL ERROR]',err);
+            });
+
+            if(result && result.length){
+                con.query("INSERT INTO Project.KeyManagment (id, session_id, Pubkey) VALUES(?, ?, ?);", [result[0].id,session_id,Pubkey],function(err,result,fields){
+                    con.on('error',function(err){
+                        console.log('[MySQL ERROR]',err);
+                    });
+                    
+                })
+            
+            }
+            res.json("public key is uploaded !!")
+        })
+    }
+
+
+    if(option == 'ask'){
+        console.log(peer_id);
+        con.query("SELECT * FROM Project.KeyManagment where id=?;", [peer_id],function(err,result,fields){
+            con.on('error',function(err){
+                console.log('[MySQL ERROR]',err);
+            });
+            console.log(result[0].Pubkey)
+            res.json(result[0].Pubkey)
+            // res.json("public key is uploaded !!")
+        })
+    }
+})
+
+app.post('/ShareKey/',(req,res,next)=>{
+    var post_data = req.body;
+
+    var encrypted_key = post_data.encrypted_key.replace(/['"]+/g, '')
+    console.log(encrypted_key);
+    var chatting_id = post_data.chatting_id
+    console.log(chatting_id);
+
+
+
+    con.query("INSERT INTO Project.KeyExchange (chatting_id, secret_key) VALUES(?, ?);", [chatting_id,encrypted_key],function(err,result,fields){
+        con.on('error',function(err){
+            console.log('[MySQL ERROR]',err);
+        });
+        res.json("secret ket has been sent");
+    })
+
+
+
+});
+
+app.post('/AskSecKey/',(req,res,next)=>{
+	var post_data = req.body;
+	
+	var request_id = post_data.request_id;
+    console.log(request_id);
+	
+	con.query("SELECT secret_key FROM Project.KeyExchange WHERE chatting_id=?",[request_id],function(err,result,fields){
+		console.log('[MySQL ERROR]',err);
+        console.log(result[0].secret_key.replace("\n",""));
+        var data = result[0].secret_key.replace("\"","");
+        res.json(data);
+	});
+	
+});
+
+
+
+/// Chat Managment Module
 
 app.post('/ChattManagement/',(req,res,next)=>{
 
@@ -387,6 +382,8 @@ app.post('/ChattManagement/',(req,res,next)=>{
     
 
 })
+
+
 // Start Server
 
 app.setMaxListeners(0);

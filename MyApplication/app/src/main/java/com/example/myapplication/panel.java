@@ -1,38 +1,20 @@
 package com.example.myapplication;
 
+import android.content.Intent;
 import android.os.Bundle;
-import android.util.Base64;
+import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.chilkatsoft.CkRsa;
 import com.example.myapplication.Retrofit.INodeJS;
 import com.example.myapplication.Retrofit.RetrofitClient;
 import com.google.android.material.button.MaterialButton;
 
-import java.nio.charset.StandardCharsets;
-import java.security.InvalidKeyException;
-import java.security.KeyFactory;
-import java.security.KeyPairGenerator;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.security.UnrecoverableEntryException;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.X509EncodedKeySpec;
 import java.util.Random;
-
-import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.KeyGenerator;
-import javax.crypto.NoSuchPaddingException;
-import javax.crypto.SecretKey;
 
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
@@ -43,13 +25,9 @@ import retrofit2.Retrofit;
 public class panel extends AppCompatActivity {
 
 
-
+    private static final String TAG = "Chilkat";
     INodeJS myAPI;
     CompositeDisposable compositeDisposable = new CompositeDisposable();
-    KeyGenerator keygen = KeyGenerator.getInstance("AES");
-    Cipher cipher = Cipher.getInstance("RSA");
-
-
     Random rand = new Random();
 
     MaterialButton request,accept,reject,askpub;
@@ -62,11 +40,12 @@ public class panel extends AppCompatActivity {
 
     String option,responded_status;
 	String request_id;
+    String encryptedStr;
 	
 	Intent i;
 
 
-    public panel() throws NoSuchAlgorithmException, NoSuchPaddingException {
+    public panel() {
     }
 
     @Override
@@ -139,59 +118,26 @@ public class panel extends AppCompatActivity {
                 option = "req";
                 responded_status = "binding";
                 request_id = String.format("%04d", rand.nextInt(10000));
-//                String email2 = "temp@temp.com";
-                ChatManagement(request_id,option,user_id,email,responded_status,null);
-				
-				keygen.init(256);
-                SecretKey GenKey = keygen.generateKey();
-                String key = GenKey.getEncoded().toString();
+                ChatManagement(request_id,option,user_id,data.getText().toString(),responded_status,null);
 
-                byte[] ff = Base64.decode(peer_pubkey,Base64.NO_WRAP);
-                PublicKey publicKey= null;
-                try {
-                    publicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(ff));
-                } catch (InvalidKeySpecException e) {
-                    e.printStackTrace();
-                } catch (NoSuchAlgorithmException e) {
-                    e.printStackTrace();
-                }
+                String key = getRandomHexString(64);
 
+                CkRsa rsaEncryptor = new CkRsa();
 
-                try {
-                    cipher.init(Cipher.ENCRYPT_MODE,publicKey);
-                } catch (InvalidKeyException e) {
-                    e.printStackTrace();
-                }
+                rsaEncryptor.put_EncodingMode("hex");
+                boolean success = rsaEncryptor.ImportPublicKey(peer_pubkey.replaceAll("\"",""));
+                boolean usePrivateKey = false;
+                encryptedStr = rsaEncryptor.encryptStringENC(key,usePrivateKey);
+                Log.i(TAG,encryptedStr);
 
-
-                byte [] keybyte = key.getBytes(StandardCharsets.UTF_8);
-
-                byte [] cipherdata = null;
-                try {
-                    cipherdata = cipher.doFinal(keybyte);
-                } catch (BadPaddingException e) {
-                    e.printStackTrace();
-                } catch (IllegalBlockSizeException e) {
-                    e.printStackTrace();
-                }
-
-
-                String dd = Base64.encodeToString(cipherdata,Base64.DEFAULT);
-				
-				ShareKey(request_id,dd);
-                Toast.makeText(panel.this,""+dd,Toast.LENGTH_SHORT).show();
+				ShareKey(request_id,encryptedStr);
+                Toast.makeText(panel.this,""+encryptedStr,Toast.LENGTH_SHORT).show();
 				
 				i = new Intent(getApplicationContext(),keyExchange.class);
-				i.putExtra("secret_key",dd);
-				i.putExtra("private_key",privateKey);
+				i.putExtra("secret_key",key);
+				i.putExtra("private_key",private_key);
 				i.putExtra("email",email);
 				startActivity(i);
-				
-				
-				
-				
-				
-
             }
         });
 
@@ -201,14 +147,30 @@ public class panel extends AppCompatActivity {
                 option = "res";
                 responded_status = "accept";
 
-
-//                Toast.makeText(panel.this,""+dd,Toast.LENGTH_SHORT).show();
                 ChatManagement(data.getText().toString(),option,"","",responded_status,null);
-				AskSecKey(data.getText().toString());
-				
-				
-				
-				
+                compositeDisposable.add(myAPI.AskSecKey(data.getText().toString())
+                        .subscribeOn(Schedulers.io())
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribe(new Consumer<String>() {
+                            @Override
+                            public void accept(String s) throws Exception {
+                                CkRsa rsaDecryptor = new CkRsa();
+                                rsaDecryptor.put_EncodingMode("hex");
+                                boolean success = rsaDecryptor.ImportPrivateKey(private_key);
+                                Toast.makeText(panel.this,""+private_key,Toast.LENGTH_SHORT).show();
+                                boolean usePrivateKey = true;
+                                Toast.makeText(panel.this,""+s.replaceAll("\"","").replaceAll("\n",""),Toast.LENGTH_SHORT).show();
+                                String decryptedStr = rsaDecryptor.decryptStringENC(s.replaceAll("\"", ""),usePrivateKey);
+//                                Log.i(TAG, decryptedStr);
+                                Toast.makeText(panel.this,""+decryptedStr,Toast.LENGTH_SHORT).show();
+                                i = new Intent(getApplicationContext(),keyExchange.class);
+                                i.putExtra("secret_key",decryptedStr);
+                                i.putExtra("private_Key",private_key);
+                                i.putExtra("email",email);
+                                startActivity(i);
+
+                            }
+                        }));
 
             }
         });
@@ -221,7 +183,6 @@ public class panel extends AppCompatActivity {
 
             }
         });
-
         reject.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -244,24 +205,7 @@ public class panel extends AppCompatActivity {
                     }
                 }));
     }
-	
-	private void AskSecKey(String chatting_id) {
-        compositeDisposable.add(myAPI.AskSecKey(chatting_id)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(new Consumer<String>() {
-                    @Override
-                    public void accept(String s) throws Exception {
-                        Toast.makeText(panel.this, "" + s, Toast.LENGTH_SHORT).show();
-						i = new Intent(getApplicationContext(),keyExchange.class);
-						i.putExtra("secret_key",s);
-						i.putExtra("privateKey",privateKey);
-						i.putExtra("email",email);
-						startActivity(i);
-						
-                    }
-                }));
-    }
+
 
     private void ChatManagement(String request_id, String option, String session_id, String email, String responded_status, String chatting_id) {
 
@@ -277,7 +221,7 @@ public class panel extends AppCompatActivity {
     }
 
     private void updateTextView() {
-        compositeDisposable.add(myAPI.ChatManagemnt("chk_res",null,"","asd556717@gmail.com","binding",null)
+        compositeDisposable.add(myAPI.ChatManagemnt("chk_res",null,"",email,"binding",null)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Consumer<String>() {
@@ -303,7 +247,21 @@ public class panel extends AppCompatActivity {
     }
 
 
+    private String getRandomHexString(int numchars){
+        Random r = new Random();
+        StringBuffer sb = new StringBuffer();
+        while(sb.length() < numchars){
+            sb.append(Integer.toHexString(r.nextInt()));
+        }
+
+        return sb.toString().substring(0, numchars);
+    }
 
 
 
+
+
+    static {
+        System.loadLibrary("chilkat");
+    }
 }

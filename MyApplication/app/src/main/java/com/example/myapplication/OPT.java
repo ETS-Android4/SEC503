@@ -8,6 +8,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
+import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -17,6 +18,7 @@ import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
+import com.chilkatsoft.*;
 
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -35,19 +37,18 @@ import retrofit2.Retrofit;
 
 public class OPT extends AppCompatActivity {
 
+    private static final String TAG = "Chilkat";
+
     INodeJS myAPI;
     CompositeDisposable compositeDisposable = new CompositeDisposable();
-
-    KeyPairGenerator keygen = KeyPairGenerator.getInstance(KeyProperties.KEY_ALGORITHM_RSA, "AndroidKeyStore");
-//    KeyPairGenerator keygen = KeyPairGenerator.getInstance("RSA");
-
     MaterialButton submit;
     TextView otp;
 
     String value,email;
+    String publ_key,pvt_key;
     Intent i;
 
-    public OPT() throws NoSuchProviderException, NoSuchAlgorithmException {
+    public OPT() throws NoSuchAlgorithmException {
     }
 
 
@@ -65,10 +66,23 @@ public class OPT extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        CkRsa rsa = new CkRsa();
+
+        boolean success = rsa.GenerateKey(3072);
+        if (success != true) {
+            Log.i(TAG, rsa.lastErrorText());
+            return;
+        }
+
+        publ_key = rsa.exportPublicKey();
+        pvt_key = rsa.exportPrivateKey();
+
+
+
         Bundle extras = getIntent().getExtras();
         if (extras != null) {
              value = extras.getString("session_id");
-			 email = example.getString("email");
+			 email = extras.getString("email");
 			 
         }
 
@@ -102,29 +116,15 @@ public class OPT extends AppCompatActivity {
                     @Override
                     public void accept(String s) throws Exception {
                         if(!s.contains("Fail")) {
-                            keygen.initialize(new KeyGenParameterSpec.Builder(
-                                    "mykey",
-                                    KeyProperties.PURPOSE_SIGN | KeyProperties.PURPOSE_VERIFY)
-                                    .setDigests(KeyProperties.DIGEST_SHA256, KeyProperties.DIGEST_SHA512)
-                                    .setKeySize(3072)
-                                    .build());
-                            KeyPair keyPair = keygen.generateKeyPair();
-                            PrivateKey privateKey = keyPair.getPrivate();
-                            PublicKey publicKey = keyPair.getPublic();
-                            byte[] publicKeyByte = publicKey.getEncoded();
-                            String publicKeyString = Base64.encodeToString(publicKeyByte, Base64.NO_WRAP);
-                            byte[] ff = Base64.decode(publicKeyString,Base64.NO_WRAP);
-                            PublicKey pub = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(ff));
-
 
                             String option ="push";
                             Toast.makeText(OPT.this, "" + s, Toast.LENGTH_SHORT).show();
-                            Keymanagemnt(publicKeyString,session_id,option.toString());
+                            Keymanagemnt(publ_key,session_id,option.toString());
                             i = new Intent(getApplicationContext(),panel.class);
                             i.putExtra("user_id",s);
                             i.putExtra("session_id",session_id);
-                            i.putExtra("public_key",publicKey);
-                            i.putExtra("private_key",privateKey);
+                            i.putExtra("public_key",publ_key);
+                            i.putExtra("private_key",pvt_key);
 							i.putExtra("email",email);
                             startActivity(i);
                         }
@@ -146,5 +146,9 @@ public class OPT extends AppCompatActivity {
                 Toast.makeText(OPT.this, "" + s, Toast.LENGTH_SHORT).show();
             }
         }));
+    }
+
+    static {
+        System.loadLibrary("chilkat");
     }
 }

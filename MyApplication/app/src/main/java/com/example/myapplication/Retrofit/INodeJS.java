@@ -44,6 +44,10 @@ public interface INodeJS {
     Observable<String> ShareKey(@Field("chatting_id") String chatting_id,
                                 @Field("encrypted_key") String encrypted_key);
 
+    @POST("/AskSecKey/")
+    @FormUrlEncoded
+    Observable<String> AskSecKey(@Field("request_id") String request_id);
+
 
 //    var option = post_data.option;
 //    var Pubkey = post_data.Pubkey;
