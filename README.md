@@ -32,4 +32,6 @@ To launch this application, there are two parts, server-side and application-sid
 this project aimed to have a secure envirnoment which include data encryption, key exchange mechanisms, and authentication.
 
 ## Prove of Concept<a name="poc"></a>
-* application - Secure Chatting:
+* Application - Secure Chatting App:
+<img src="https://github.com/Abdulwahab55/SEC503/blob/main/demo.gif" width="1200" height="800" />
+* Example of the encrypted Traffic
