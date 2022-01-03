@@ -12,13 +12,13 @@ const { read } = require('fs');
 
 
 const nodemailer = require('nodemailer');
-
+// email account for OTP
 let transporter = nodemailer.createTransport({
     host:'smtp.gmail.com',
     port:587,
     auth:{
-        user:"asd566717@gmail.com",
-        pass:"Samah7922"
+        user:"Email",
+        pass:"Password"
     }
 })
 
