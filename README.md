@@ -30,6 +30,9 @@ To launch this application, there are two parts, server-side and application-sid
     ```
     node chat_room.js
     ```
+  * Modifiy the SMTP configuration so OTP services would run successfuly, provide it with support email account ro sending the OTP.
+
+
 * Application Side
   * First Run Android Studio, and open project and select "MyApplication" folder.
   * After the application is being installed with all required dependencies. There are some modification must be done, the server IP most be change to match in two java files during android application compilation
